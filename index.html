@@ -50,13 +50,22 @@ function initialize() {
 function play() {
 
   var source = mediaStreamSource || audio.getSource();
+  var filter = context.createBiquadFilter();
+  var lpfilter = context.createBiquadFilter();
   if(mediaStreamSource){
 	  var wavenode = wavebox.getAudioNode();
 	  var frequencynode = frequencybox.getAudioNode();
 
 	  // Route audio and graphs
-	  source.connect(frequencynode);
-	  frequencynode.connect(wavenode)
+	  
+	  //I have to adda peaking filter
+	  lpfilter.type = filter.LOWPASS;
+	  lpfilter.frequency.value = 300;
+	  filter.type = filter.PEAKING;
+	  source.connect(lpfilter);
+	  lpfilter.connect(filter);
+	  filter.connect(frequencynode);
+	  frequencynode.connect(wavenode);
 	  wavenode.connect(context.destination);
 	  
 	  recorder = new Recorder(mediaStreamSource);
@@ -98,6 +107,8 @@ function test() {
   //train the net before
   
   if(!trained){
+	net = new brain.NeuralNetwork();
+	localStorage.setItem('instances', JSON.stringify(instances));
 	console.log(JSON.stringify((net.train(instances, {
 	  errorThresh: 0.005,  // error threshold to reach
 	  iterations: 20000,   // maximum training iterations
@@ -209,8 +220,14 @@ function acceptData(){
 			case 'E':
 			  instances[i]['output']= {E : 1};
 			  break;
+			case 'I':
+			  instances[i]['output']= {I : 1};
+			  break;
 			case 'O':
 			  instances[i]['output']= {O : 1};
+			  break;
+			case 'U':
+			  instances[i]['output']= {U : 1};
 			  break;
 			case 'N':
 			  instances[i]['output']= {N : 1};
@@ -266,6 +283,11 @@ function createDownloadLink() {
     });
   }
 
+function loadFromLS(){
+	instances = localStorage.getItem('instances');
+	alert("Successfully Loaded");
+}
+
 $(function() { initialize(); });
 
 </script>
@@ -289,6 +311,7 @@ $(function() { initialize(); });
     <a href="#" id="train" onmousedown="play()" onmouseup="stop()">Train</a>
     <a href="#" id="test" onmousedown="test()" onmouseup="stopTest()">Test</a>
     <p/>
+    <p name="load">Or <a href="#load" onclick="loadFromLS()">load</a> from your local storage</p>
     <div>
 	<ul id="recordinglist">
 	</ul>
