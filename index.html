@@ -49,36 +49,11 @@ function initialize() {
 
 function play() {
 
-  var source = mediaStreamSource || audio.getSource();
-  var filter = context.createBiquadFilter();
-  var lpfilter = context.createBiquadFilter();
   if(mediaStreamSource){
-	  var wavenode = wavebox.getAudioNode();
-	  var frequencynode = frequencybox.getAudioNode();
-
-	  // Route audio and graphs
-	  
-	  //I have to adda peaking filter
-	  lpfilter.type = filter.LOWPASS;
-	  lpfilter.frequency.value = 300;
-	  filter.type = filter.PEAKING;
-	  source.connect(lpfilter);
-	  lpfilter.connect(filter);
-	  filter.connect(frequencynode);
-	  frequencynode.connect(wavenode);
-	  wavenode.connect(context.destination);
-	  
-	  recorder = new Recorder(mediaStreamSource);
-	  recorder && recorder.record();
-
-	  // Play audio
-	  if(mediaStreamSource==undefined){
-		audio.reload();
-		source.noteOn(0);
-	  }
 	  // Enable graphs
 	  wavebox.enable();
 	  frequencybox.enable();
+	  recorder.record();
 
 	  $('#train').text("Stop");
 	  $('#train').click(stop);
@@ -92,7 +67,8 @@ function stop() {
   // Disable graphs
   wavebox.disable();
   frequencybox.disable();
-  audio.getSource().disconnect();
+  recorder.stop();
+  //audio.getSource().disconnect();
   
     createDownloadLink();
     recorder.clear();
@@ -118,24 +94,8 @@ function test() {
 	trained=true;
   }
 
-  var source = mediaStreamSource || audio.getSource();
   if(mediaStreamSource){
-	  var wavenode = wavebox.getAudioNode();
-	  var frequencynode = frequencybox.getAudioNode();
 
-	  // Route audio and graphs
-	  source.connect(frequencynode);
-	  frequencynode.connect(wavenode)
-	  wavenode.connect(context.destination);
-	  
-	  recorder = new Recorder(mediaStreamSource);
-	  recorder && recorder.record();
-
-	  // Play audio
-	  if(mediaStreamSource==undefined){
-		audio.reload();
-		source.noteOn(0);
-	  }
 	  // Enable graphs
 	  wavebox.enable();
 	  frequencybox.enable();
@@ -152,7 +112,6 @@ function stopTest() {
 	// Disable graphs
 	wavebox.disable();
 	frequencybox.disable();
-	audio.getSource().disconnect();
 
 	$('#test').text("Test");
 	$('#test').click(test);
@@ -162,14 +121,46 @@ function stopTest() {
 	for(i=0; i<normalized_sample.length; i++){
 		res = net.run(normalized_sample[i]);
 		console.log(res);
-		if(res.A>0.89) console.log('A');
-		if(res.E>0.89) console.log('E');
-		if(res.O>0.89) console.log('O');
+		if(res.A>0.76) console.log('A');
+		if(res.E>0.76) console.log('E');
+		if(res.O>0.76) console.log('O');
 	}
 }
 
+var source;
+var wavenode;
+var frequencynode;
+
 function iCanHazUserMedia(stream) {
-    mediaStreamSource = context.createMediaStreamSource( stream );
+	mediaStreamSource = context.createMediaStreamSource( stream );
+    
+	source = mediaStreamSource || audio.getSource();
+	var filter = context.createBiquadFilter();
+	var lpfilter = context.createBiquadFilter();
+
+	wavenode = wavebox.getAudioNode();
+	frequencynode = frequencybox.getAudioNode();
+
+	// Route audio and graphs
+	  
+	//I have to adda peaking filter
+	lpfilter.type = filter.HIGHPASS;
+	lpfilter.frequency.value = 300;
+	filter.type = filter.PEAKING;
+	source.connect(lpfilter);
+	lpfilter.connect(filter);
+	filter.connect(frequencynode);
+	frequencynode.connect(wavenode);
+	wavenode.connect(context.destination);
+	
+	recorder = new Recorder(mediaStreamSource);
+	recorder && recorder.record();
+
+	  // Play audio
+	if(mediaStreamSource==undefined){
+		audio.reload();
+		source.noteOn(0);
+	}
 }
 
 function useMicrophoneAsInput(){
@@ -243,7 +234,9 @@ function normalize(matrix, max){
 	for(i=0; i<matrix.length; i++){
 	  normalized[i] = new Array(matrix[i].length);
 	  for(j=0; j<matrix[i].length; j++){
-		normalized[i][j] = Math.max(0,matrix[i][j]/max-noise);
+		if(max!=0)
+			normalized[i][j] = Math.max(0,matrix[i][j]/max);
+		else normalized[i][j] = 0;
 	  }
 	}
 
@@ -284,8 +277,9 @@ function createDownloadLink() {
   }
 
 function loadFromLS(){
-	instances = localStorage.getItem('instances');
-	alert("Successfully Loaded");
+	alert("Successfully Loaded"+eval(localStorage.getItem('instances')));
+	instances = eval(localStorage.getItem('instances'));
+	
 }
 
 $(function() { initialize(); });
