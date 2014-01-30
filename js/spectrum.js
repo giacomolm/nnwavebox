@@ -27,7 +27,7 @@ SpectrumBox.prototype.init = function(
   this.num_bins = num_bins;
   this.num_points = num_points;
   this.canvas_id = canvas_id;
-  this.update_rate_ms = 50;
+  this.update_rate_ms = 5;
   this.smoothing = 0.75;
   this.type = type || SpectrumBox.Types.FREQUENCY;
   this.content = "";
@@ -54,6 +54,10 @@ SpectrumBox.prototype.init = function(
   this.fft = this.actx.createAnalyser();
   this.fft.fftSize = this.num_points;
   this.data = new Uint8Array(this.fft.frequencyBinCount);
+  this.frequencyData = new Array();
+  this.pitch = 0;
+  gotStream(this.fft,this.actx);
+  
 }
 
 /* Returns the AudioNode of the FFT. You can route signals into this. */
@@ -90,12 +94,12 @@ SpectrumBox.prototype.setType = function(type) {
 /* Enable the analyzer. Starts drawing stuff on the canvas. */
 SpectrumBox.prototype.enable = function() {
   var that = this;
+  this.current = 0;
+  this.samples = new Array();
   if (!this.intervalId) {
     this.intervalId = window.setInterval(
         function() { that.update(); }, this.update_rate_ms);
   }
-
-  this.current = 0;
 
   return this;
 }
@@ -118,6 +122,20 @@ SpectrumBox.prototype.update = function() {
   if (this.type == SpectrumBox.Types.FREQUENCY) {
     this.fft.smoothingTimeConstant = this.smoothing;
     this.fft.getByteFrequencyData(data);
+    this.pitch = updatePitch();
+    //console.log("Pitch "+this.pitch);
+    //calculate pitch 
+    //this.pitch = updatePitch();
+   	/*if (this.pitch != 0) {	    
+		if(this.pitch>110){		    
+		    for(j=0; j<currentFrequency.length; j++){				
+				currentFrequency[j] =currentFrequency[j]/this.pitch;
+		    }
+		    this.frequencyData[this.current] = currentFrequency;			    
+		    this.current++;		
+		}
+	}*/
+		    
   } else {
     this.fft.smoothingTimeConstant = 0;
     this.fft.getByteFrequencyData(data);
@@ -154,14 +172,20 @@ SpectrumBox.prototype.update = function() {
         i * bar_width, this.height,
         bar_width - this.bar_spacing, -scaled_average);
 	avg = -scaled_average;
-	this.content = this.content+"\n"+i+" "+avg;
-	this.samples[this.current][i] = Math.floor(scaled_average);
-	if(i==this.num_bins-1)console.log("Scaled "+this.current+" :"+this.samples[this.current]);
+	this.content = this.content+"\n"+i+" "+avg;	
+	if(this.pitch>0 && this.pitch<10000){
+		this.samples[this.current][i] = Math.floor(scaled_average)/this.pitch;
+	}
+
     } else {
       this.ctx.fillRect(
         i * bar_width, this.height - scaled_average + 2,
         bar_width - this.bar_spacing, -1);
+
     }
   }
-  this.current++;
+   if(this.pitch>0 && this.pitch<10000 && this.type == SpectrumBox.Types.FREQUENCY ) {
+	//console.log("Scaled "+this.current+" :"+JSON.stringify(this.samples[this.current]));
+	this.current++;	
+     }
 }
