@@ -47,7 +47,7 @@ function initialize() {
 
   //create the NN
   net = new brain.NeuralNetwork({
-		   hiddenLayers: [10,10],
+		   hiddenLayers: [4,4],
 		   learningRate: 0.3
 	});
 	
@@ -133,8 +133,11 @@ function stopTest() {
 				res = net.run(normalized_sample[i]);
 				var tempmax = getJSONmax(res);
 				if(res[tempmax]>th && latestChar!=tempmax){
-					out.innerHTML= out.innerHTML + ' - '+tempmax;
-					latestChar = tempmax;
+					//print only vowels
+					if((tempmax == 'A')||(tempmax == 'E')||(tempmax == 'I')||(tempmax == 'O')||(tempmax == 'U')){
+						out.innerHTML= out.innerHTML + ' - '+tempmax;
+						latestChar = tempmax;
+					}
 				}				
 				console.log(sortJSON(res, new Object()));
 			}
@@ -156,14 +159,7 @@ function iCanHazUserMedia(stream) {
 	frequencynode = frequencybox.getAudioNode();
 
 	// Route audio and graphs
-	  
-	//I have to adda peaking filter
-	lpfilter.type = filter.HIGHPASS;
-	lpfilter.frequency.value = 300;
-	filter.type = filter.PEAKING;
 	source.connect(frequencynode);
-	//lpfilter.connect(filter);
-	//filter.connect(frequencynode);
 	frequencynode.connect(wavenode);
 	wavenode.connect(context.destination);
 	
@@ -244,8 +240,7 @@ function acceptData(){
 				  instances[i]['output'] = new Object();
 				  instances[i]['output'][result] = 1;
 				} 
-		  }
-		  //else instances[i] = {"input": [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], "output": {N: 1 }};
+		  }		
 		}
 	//console.log(JSON.stringify(instances));
 	}
@@ -402,6 +397,14 @@ function loadTS(){
   }, errorHandler);
 }
 
+function loadRemoteTS(){
+
+	$.getJSON( "js/training.json", function( data ) {
+		instances = data;
+	});
+
+}
+
 $(function() { initialize(); initFS();});
 
 </script>
@@ -427,7 +430,7 @@ $(function() { initialize(); initFS();});
     <a href="#" id="test" onmousedown="test()" onmouseup="stopTest()">Test</a>
     <div class="output">Output<span id="output">--</span></div>
     <p/>
-    <p name="load"><a href="#load" onclick="saveTS()">Save</a> your TS on a local file, or <a href="#load" onclick="loadTS()">Load </a> your latest version</p>
+    <p name="load"><a href="#load" onclick="saveTS()">Save</a> your TS on a local file, or <a href="#load" onclick="loadTS()">Load </a> your latest version<br>Or <a href="#load" onclick="loadRemoteTS()">Load </a> the italian one (1,7 MB)</p>
     <div>
 	<ul id="recordinglist">
 	</ul>

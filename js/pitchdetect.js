@@ -189,7 +189,7 @@ function autoCorrelate( buf, sampleRate ) {
 		}
 	}
 	if ((rms>0.01)&&(best_correlation > 0.01)) {
-		// console.log("f = " + sampleRate/best_offset + "Hz (rms: " + rms + " confidence: " + best_correlation + ")")
+		//console.log("f = " + sampleRate/best_offset + "Hz (rms: " + rms + " confidence: " + best_correlation + " best offset: "+sampleRate+" )")
 		return sampleRate/best_offset;
 	}
 	return -1;
