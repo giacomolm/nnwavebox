@@ -7,7 +7,7 @@
   <script src="js/remoteaudioplayer.js"></script>
   <script src="js/recorder.js"></script>
   <script src="js/brain-0.6.0.js"></script>
-  <script src="http://cwilso.github.io/AudioContext-MonkeyPatch/AudioContextMonkeyPatch.js"></script>
+  <script src="js/audioContext.js"></script>
   <script src="js/pitchdetect.js"></script>
 
   <link type="text/css" href="css/style.css" rel="Stylesheet" />
@@ -26,7 +26,7 @@ var instances = new Array();
 var net;
 
 function initialize() {
-  context = new webkitAudioContext();
+  context = new AudioContext();
 
   // Setup frequency domain graph
   frequencybox = new SpectrumBox(2048, 128, "fftbox", context);
@@ -175,10 +175,17 @@ function iCanHazUserMedia(stream) {
 
 function useMicrophoneAsInput(){
     try {
-      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
-      navigator.getUserMedia({audio:true},iCanHazUserMedia);
+      navigator.getUserMedia = ( navigator.getUserMedia ||
+                       navigator.webkitGetUserMedia ||
+                       navigator.mozGetUserMedia ||
+                       navigator.msGetUserMedia);
+      navigator.getUserMedia({audio:true},iCanHazUserMedia,// errorCallback
+														      function(err) {
+														         console.log("The following error occured: " + err);
+														      });
     } catch (e) {
       alert('No web audio support in this browser');
+      console.log(e)
     }
 }
 

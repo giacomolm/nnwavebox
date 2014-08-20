@@ -19,9 +19,9 @@ RemoteAudioPlayer.prototype.load = function(callback) {
   request.open("GET", this.url, true);
   request.responseType = "arraybuffer";
   request.onload = function() {
-    that.buffer = that.context.createBuffer(request.response, true);
-    that.reload();
-    callback(request.response);
+    //that.buffer = that.context.createBuffer(request.response, true);
+    //that.reload();
+    //callback(request.response);
   }
 
   request.send();
